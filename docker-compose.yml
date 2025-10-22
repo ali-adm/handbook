@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ./backend/handbook.db:/app/handbook.db
+    environment:
+      - SECRET_KEY=your-production-secret-key-change-this
+      - DATABASE_URL=sqlite:///handbook.db
+      - DEBUG=False
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  uploads:
+  database:
