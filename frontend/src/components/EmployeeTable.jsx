@@ -17,9 +17,11 @@ import {
   Typography,
   Button,
   Chip,
-  Avatar
+  Avatar,
+  IconButton,
+  Tooltip
 } from '@mui/material'
-import { Search, Download } from '@mui/icons-material'
+import { Search, Download, Edit, Delete } from '@mui/icons-material'
 import { getEmployees, getDepartments, exportPDF } from '../services/api'
 
 const EmployeeTable = ({ onEdit, onDelete, onPhotoUpload }) => {
@@ -114,6 +116,11 @@ const EmployeeTable = ({ onEdit, onDelete, onPhotoUpload }) => {
     { id: 'city_phone', label: 'Городской №' },
     { id: 'email', label: 'Email' },
   ]
+
+  // Добавляем колонку действий только если переданы соответствующие пропсы
+  if (onEdit || onDelete) {
+    columns.push({ id: 'actions', label: 'Действия' })
+  }
 
   return (
     <Box>
@@ -216,6 +223,35 @@ const EmployeeTable = ({ onEdit, onDelete, onPhotoUpload }) => {
                     </a>
                   )}
                 </TableCell>
+                {/* Колонка действий - отображается только в админ-панели */}
+                {(onEdit || onDelete) && (
+                  <TableCell>
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                      {onEdit && (
+                        <Tooltip title="Редактировать">
+                          <IconButton 
+                            size="small" 
+                            color="primary"
+                            onClick={() => onEdit(employee)}
+                          >
+                            <Edit />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                      {onDelete && (
+                        <Tooltip title="Удалить">
+                          <IconButton 
+                            size="small" 
+                            color="error"
+                            onClick={() => onDelete(employee)}
+                          >
+                            <Delete />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                    </Box>
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>
