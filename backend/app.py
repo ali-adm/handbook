@@ -265,13 +265,9 @@ def import_data():
 def export_pdf():
     try:
         from reportlab.lib.pagesizes import A4, landscape
-        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
         from reportlab.lib import colors
-        from reportlab.pdfbase import pdfmetrics
-        from reportlab.pdfbase.ttfonts import TTFont
         import io
-        import os
         
         employees = Employee.query.all()
         
@@ -279,46 +275,6 @@ def export_pdf():
         # Используем альбомную ориентацию для лучшего отображения таблицы
         doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), topMargin=30, bottomMargin=30)
         elements = []
-        
-        # Регистрируем шрифт с поддержкой кириллицы
-        try:
-            # Попробуем найти стандартные шрифты с кириллицей
-            font_paths = [
-                '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',  # Linux
-                '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf',  # Linux
-                'C:\\Windows\\Fonts\\arial.ttf',  # Windows
-                'C:\\Windows\\Fonts\\times.ttf',  # Windows
-            ]
-            
-            font_found = False
-            for font_path in font_paths:
-                if os.path.exists(font_path):
-                    pdfmetrics.registerFont(TTFont('CyrillicFont', font_path))
-                    font_found = True
-                    break
-            
-            if not font_found:
-                # Если шрифты не найдены, используем встроенные
-                pdfmetrics.registerFont(TTFont('CyrillicFont', 'Helvetica'))
-        except:
-            # В случае ошибки используем стандартный шрифт
-            pdfmetrics.registerFont(TTFont('CyrillicFont', 'Helvetica'))
-        
-        # Создаем стили с кириллическим шрифтом
-        styles = getSampleStyleSheet()
-        title_style = ParagraphStyle(
-            'CustomTitle',
-            parent=styles['Title'],
-            fontName='CyrillicFont',
-            fontSize=16,
-            spaceAfter=20,
-            alignment=1  # Center
-        )
-        
-        # Заголовок
-        title = Paragraph("ТЕЛЕФОННЫЙ СПРАВОЧНИК", title_style)
-        elements.append(title)
-        elements.append(Spacer(1, 12))
         
         # Подготовка данных таблицы
         data = [['Отдел', 'ФИО', 'Должность', 'Внутр. №', 'Общ. №', 'Городской №', 'Email']]
@@ -342,7 +298,7 @@ def export_pdf():
             # Заголовок таблицы
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2E86AB')),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-            ('FONTNAME', (0, 0), (-1, 0), 'CyrillicFont'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
             ('FONTSIZE', (0, 0), (-1, 0), 9),
             ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
             ('TOPPADDING', (0, 0), (-1, 0), 8),
@@ -353,7 +309,7 @@ def export_pdf():
             ('BACKGROUND', (0, 2), (-1, -1), colors.HexColor('#F8F9FA'), 'GRID', (1, 1)),
             
             # Стиль данных
-            ('FONTNAME', (0, 1), (-1, -1), 'CyrillicFont'),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
             ('FONTSIZE', (0, 1), (-1, -1), 8),
             ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
@@ -378,19 +334,6 @@ def export_pdf():
         
         elements.append(table)
         
-        # Добавляем информацию о количестве записей
-        count_style = ParagraphStyle(
-            'CountStyle',
-            parent=styles['Normal'],
-            fontName='CyrillicFont',
-            fontSize=8,
-            textColor=colors.grey,
-            alignment=2,  # Right
-            spaceBefore=10
-        )
-        count_text = Paragraph(f"Всего записей: {len(employees)}", count_style)
-        elements.append(count_text)
-        
         doc.build(elements)
         
         buffer.seek(0)
@@ -402,6 +345,7 @@ def export_pdf():
         )
     
     except Exception as e:
+        print(f"Ошибка при экспорте PDF: {str(e)}")
         return jsonify({'error': f'Ошибка экспорта: {str(e)}'}), 500
 
 if __name__ == '__main__':
