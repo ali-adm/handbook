@@ -2,8 +2,8 @@ from flask import Flask, request, jsonify, send_file
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_cors import CORS
-from flask_uploads import UploadSet, configure_uploads, IMAGES
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from datetime import datetime
 import os
 from dotenv import load_dotenv
@@ -25,8 +25,12 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 
 # Настройка загрузки файлов
-photos = UploadSet('photos', IMAGES)
-configure_uploads(app, photos)
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+UPLOAD_FOLDER = 'uploads/photos'
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # Модель пользователя (администратора)
 class User(UserMixin, db.Model):
@@ -183,14 +187,27 @@ def delete_employee(id):
 def upload_photo(employee_id):
     employee = Employee.query.get_or_404(employee_id)
     
-    if 'photo' in request.files:
-        filename = photos.save(request.files['photo'])
+    if 'photo' not in request.files:
+        return jsonify({'error': 'Файл не найден'}), 400
+    
+    file = request.files['photo']
+    if file.filename == '':
+        return jsonify({'error': 'Файл не выбран'}), 400
+    
+    if file and allowed_file(file.filename):
+        # Создаем папку для загрузок, если её нет
+        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+        
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(UPLOAD_FOLDER, filename)
+        file.save(filepath)
+        
         employee.photo = filename
         db.session.commit()
         
         return jsonify({'message': 'Фото загружено', 'filename': filename})
     
-    return jsonify({'error': 'Файл не найден'}), 400
+    return jsonify({'error': 'Неподдерживаемый формат файла'}), 400
 
 # Получение списка отделов
 @app.route('/api/departments', methods=['GET'])
