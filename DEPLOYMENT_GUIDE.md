@@ -4,8 +4,9 @@
 
 1. **Удален Flask-Uploads** - заменен на встроенный функционал Flask
 2. **Обновлены версии pandas/numpy** - pandas==2.2.2, numpy==1.26.4
-3. **Исправлен Dockerfile** - удалена команда патчинга Flask-Uploads
-4. **Удален устаревший файл** - patch_flask_uploads.py
+3. **Исправлен Dockerfile backend** - удалена команда патчинга Flask-Uploads
+4. **Исправлен Dockerfile frontend** - добавлены флаги `--unsafe-perm` и `--include=dev` для корректной установки зависимостей
+5. **Удален устаревший файл** - patch_flask_uploads.py
 
 ## Команды для запуска на сервере:
 
@@ -38,4 +39,5 @@ docker compose up --build
 - Flask-Uploads полностью удален из requirements.txt
 - Загрузка файлов реализована через встроенный функционал Flask
 - Импорт pandas/numpy работает с совместимыми версиями
-- Dockerfile очищен от устаревших команд
+- Dockerfile backend очищен от устаревших команд
+- Dockerfile frontend исправлен для корректной установки devDependencies
