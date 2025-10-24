@@ -108,7 +108,11 @@ def get_employees():
         query = query.filter(
             Employee.full_name.ilike(f'%{search}%') |
             Employee.department.ilike(f'%{search}%') |
-            Employee.internal_phone.ilike(f'%{search}%')
+            Employee.internal_phone.ilike(f'%{search}%') |
+            Employee.position.ilike(f'%{search}%') |
+            Employee.common_phone.ilike(f'%{search}%') |
+            Employee.city_phone.ilike(f'%{search}%') |
+            Employee.email.ilike(f'%{search}%')
         )
     
     if department:

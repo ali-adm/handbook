@@ -80,16 +80,31 @@ const EmployeeTable = ({ onEdit, onDelete, onPhotoUpload }) => {
 
   const handleExportPDF = async () => {
     try {
+      console.log('Начало экспорта PDF...')
       const response = await exportPDF()
-      const url = window.URL.createObjectURL(new Blob([response.data]))
+      console.log('PDF получен, размер:', response.data.size)
+      
+      // Создаем blob из данных
+      const blob = new Blob([response.data], { type: 'application/pdf' })
+      const url = window.URL.createObjectURL(blob)
+      
+      // Создаем ссылку для скачивания
       const link = document.createElement('a')
       link.href = url
       link.setAttribute('download', 'phone_directory.pdf')
       document.body.appendChild(link)
+      
+      // Имитируем клик для скачивания
       link.click()
-      link.remove()
+      
+      // Очищаем
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(link)
+      
+      console.log('PDF успешно скачан')
     } catch (error) {
       console.error('Ошибка экспорта:', error)
+      alert('Ошибка при экспорте PDF. Проверьте консоль для подробностей.')
     }
   }
 
