@@ -260,50 +260,133 @@ def import_data():
 @app.route('/api/export/pdf', methods=['GET'])
 def export_pdf():
     try:
-        from reportlab.lib.pagesizes import A4
-        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
-        from reportlab.lib.styles import getSampleStyleSheet
+        from reportlab.lib.pagesizes import A4, landscape
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
         from reportlab.lib import colors
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
         import io
+        import os
         
         employees = Employee.query.all()
         
         buffer = io.BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=A4)
+        # Используем альбомную ориентацию для лучшего отображения таблицы
+        doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), topMargin=30, bottomMargin=30)
         elements = []
         
-        styles = getSampleStyleSheet()
-        title = Paragraph("Телефонный справочник", styles['Title'])
-        elements.append(title)
+        # Регистрируем шрифт с поддержкой кириллицы
+        try:
+            # Попробуем найти стандартные шрифты с кириллицей
+            font_paths = [
+                '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',  # Linux
+                '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf',  # Linux
+                'C:\\Windows\\Fonts\\arial.ttf',  # Windows
+                'C:\\Windows\\Fonts\\times.ttf',  # Windows
+            ]
+            
+            font_found = False
+            for font_path in font_paths:
+                if os.path.exists(font_path):
+                    pdfmetrics.registerFont(TTFont('CyrillicFont', font_path))
+                    font_found = True
+                    break
+            
+            if not font_found:
+                # Если шрифты не найдены, используем встроенные
+                pdfmetrics.registerFont(TTFont('CyrillicFont', 'Helvetica'))
+        except:
+            # В случае ошибки используем стандартный шрифт
+            pdfmetrics.registerFont(TTFont('CyrillicFont', 'Helvetica'))
         
+        # Создаем стили с кириллическим шрифтом
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Title'],
+            fontName='CyrillicFont',
+            fontSize=16,
+            spaceAfter=20,
+            alignment=1  # Center
+        )
+        
+        # Заголовок
+        title = Paragraph("ТЕЛЕФОННЫЙ СПРАВОЧНИК", title_style)
+        elements.append(title)
+        elements.append(Spacer(1, 12))
+        
+        # Подготовка данных таблицы
         data = [['Отдел', 'ФИО', 'Должность', 'Внутр. №', 'Общ. №', 'Городской №', 'Email']]
         
         for emp in employees:
             data.append([
-                emp.department,
-                emp.full_name,
-                emp.position,
+                emp.department or '',
+                emp.full_name or '',
+                emp.position or '',
                 emp.internal_phone or '',
                 emp.common_phone or '',
                 emp.city_phone or '',
                 emp.email or ''
             ])
         
-        table = Table(data)
-        table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 10),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+        # Создаем таблицу с оптимизированными размерами колонок
+        table = Table(data, repeatRows=1)
+        
+        # Настраиваем стиль таблицы
+        table_style = TableStyle([
+            # Заголовок таблицы
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2E86AB')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('FONTNAME', (0, 0), (-1, 0), 'CyrillicFont'),
+            ('FONTSIZE', (0, 0), (-1, 0), 9),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+            ('TOPPADDING', (0, 0), (-1, 0), 8),
+            
+            # Чередование цветов строк для лучшей читаемости
+            ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.white, 'GRID', (1, 1)),
+            ('BACKGROUND', (0, 2), (-1, -1), colors.HexColor('#F8F9FA'), 'GRID', (1, 1)),
+            
+            # Стиль данных
+            ('FONTNAME', (0, 1), (-1, -1), 'CyrillicFont'),
             ('FONTSIZE', (0, 1), (-1, -1), 8),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black)
-        ]))
+            ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            
+            # Границы
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('LINEBELOW', (0, 0), (-1, 0), 1, colors.white),
+            
+            # Отступы
+            ('LEFTPADDING', (0, 0), (-1, -1), 4),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 4),
+            ('TOPPADDING', (0, 0), (-1, -1), 3),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ])
+        
+        # Настраиваем ширину колонок для лучшего отображения
+        col_widths = [80, 120, 100, 50, 60, 60, 100]  # Ширина колонок в пунктах
+        
+        table._argW = col_widths
+        table.setStyle(table_style)
         
         elements.append(table)
+        
+        # Добавляем информацию о количестве записей
+        count_style = ParagraphStyle(
+            'CountStyle',
+            parent=styles['Normal'],
+            fontName='CyrillicFont',
+            fontSize=8,
+            textColor=colors.grey,
+            alignment=2,  # Right
+            spaceBefore=10
+        )
+        count_text = Paragraph(f"Всего записей: {len(employees)}", count_style)
+        elements.append(count_text)
+        
         doc.build(elements)
         
         buffer.seek(0)
