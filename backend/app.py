@@ -242,13 +242,23 @@ def import_data():
         
         imported_count = 0
         for _, row in df.iterrows():
+            # Обрабатываем номера телефонов - убираем .0 и преобразуем в строки
+            def clean_phone_number(value):
+                if pd.isna(value):
+                    return ''
+                # Преобразуем в строку и убираем .0
+                phone_str = str(value)
+                if phone_str.endswith('.0'):
+                    phone_str = phone_str[:-2]
+                return phone_str.strip()
+            
             employee = Employee(
                 department=row.get('Отдел', ''),
                 full_name=row.get('ФИО', ''),
                 position=row.get('Должность', ''),
-                internal_phone=str(row.get('№ вн.', '')),
-                common_phone=str(row.get('общ. №', '')),
-                city_phone=str(row.get('городской №', '')),
+                internal_phone=clean_phone_number(row.get('№ вн.', '')),
+                common_phone=clean_phone_number(row.get('общ. №', '')),
+                city_phone=clean_phone_number(row.get('городской №', '')),
                 email=row.get('email', '')
             )
             db.session.add(employee)
@@ -264,12 +274,22 @@ def import_data():
 @app.route('/api/export/pdf', methods=['GET'])
 def export_pdf():
     try:
-        from reportlab.lib.pagesizes import A4, landscape
-        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
-        from reportlab.lib import colors
+        print("Начало экспорта PDF...")
+        
+        # Проверяем доступность reportlab
+        try:
+            from reportlab.lib.pagesizes import A4, landscape
+            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+            from reportlab.lib import colors
+            print("ReportLab импортирован успешно")
+        except ImportError as e:
+            print(f"Ошибка импорта ReportLab: {e}")
+            return jsonify({'error': f'ReportLab не установлен: {str(e)}'}), 500
+        
         import io
         
         employees = Employee.query.all()
+        print(f"Найдено сотрудников для экспорта: {len(employees)}")
         
         buffer = io.BytesIO()
         # Используем альбомную ориентацию для лучшего отображения таблицы
@@ -280,15 +300,27 @@ def export_pdf():
         data = [['Отдел', 'ФИО', 'Должность', 'Внутр. №', 'Общ. №', 'Городской №', 'Email']]
         
         for emp in employees:
+            # Преобразуем номера телефонов в строки и убираем лишние символы
+            internal_phone = str(emp.internal_phone) if emp.internal_phone else ''
+            common_phone = str(emp.common_phone) if emp.common_phone else ''
+            city_phone = str(emp.city_phone) if emp.city_phone else ''
+            
+            # Убираем точки и лишние символы из номеров
+            internal_phone = internal_phone.replace('.0', '').strip()
+            common_phone = common_phone.replace('.0', '').strip()
+            city_phone = city_phone.replace('.0', '').strip()
+            
             data.append([
                 emp.department or '',
                 emp.full_name or '',
                 emp.position or '',
-                emp.internal_phone or '',
-                emp.common_phone or '',
-                emp.city_phone or '',
+                internal_phone,
+                common_phone,
+                city_phone,
                 emp.email or ''
             ])
+        
+        print("Данные подготовлены для таблицы")
         
         # Создаем таблицу с оптимизированными размерами колонок
         table = Table(data, repeatRows=1)
@@ -334,9 +366,12 @@ def export_pdf():
         
         elements.append(table)
         
+        print("Строим PDF документ...")
         doc.build(elements)
         
         buffer.seek(0)
+        print("PDF успешно создан, отправляем файл...")
+        
         return send_file(
             buffer,
             as_attachment=True,
@@ -345,7 +380,9 @@ def export_pdf():
         )
     
     except Exception as e:
-        print(f"Ошибка при экспорте PDF: {str(e)}")
+        print(f"Критическая ошибка при экспорте PDF: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': f'Ошибка экспорта: {str(e)}'}), 500
 
 if __name__ == '__main__':
