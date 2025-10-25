@@ -256,7 +256,7 @@ def import_data():
                 department=row.get('Отдел', ''),
                 full_name=row.get('ФИО', ''),
                 position=row.get('Должность', ''),
-                internal_phone=clean_phone_number(row.get('№ вн.', '')),
+                internal_phone=clean_phone_number(row.get('№ вн.', row.get('внутр. №', ''))),
                 common_phone=clean_phone_number(row.get('общ. №', '')),
                 city_phone=clean_phone_number(row.get('городской №', '')),
                 email=row.get('email', '')
@@ -337,8 +337,7 @@ def export_pdf():
             
             # Чередование цветов строк для лучшей читаемости
             ('BACKGROUND', (0, 1), (-1, -1), colors.white),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.white, 'GRID', (1, 1)),
-            ('BACKGROUND', (0, 2), (-1, -1), colors.HexColor('#F8F9FA'), 'GRID', (1, 1)),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F8F9FA')]),
             
             # Стиль данных
             ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
