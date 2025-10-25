@@ -278,7 +278,7 @@ def export_pdf():
         
         # Проверяем доступность reportlab
         try:
-            from reportlab.lib.pagesizes import A4
+            from reportlab.lib.pagesizes import A4, landscape
             from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
             from reportlab.lib import colors
             from reportlab.pdfbase import pdfmetrics
@@ -294,8 +294,8 @@ def export_pdf():
         print(f"Найдено сотрудников для экспорта: {len(employees)}")
         
         buffer = io.BytesIO()
-        # Используем книжную ориентацию
-        doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=30, bottomMargin=30)
+        # Используем альбомную ориентацию для лучшего отображения таблицы
+        doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), topMargin=30, bottomMargin=30)
         elements = []
         
         # Регистрируем шрифт для поддержки кириллицы
@@ -369,8 +369,8 @@ def export_pdf():
             ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
         ])
         
-        # Настраиваем ширину колонок для книжной ориентации
-        col_widths = [80, 120, 100, 50, 60, 60, 100]  # Ширина колонок в пунктах
+        # Настраиваем ширину колонок для альбомной ориентации
+        col_widths = [120, 150, 120, 60, 70, 70, 120]  # Ширина колонок в пунктах
         
         table._argW = col_widths
         table.setStyle(table_style)
