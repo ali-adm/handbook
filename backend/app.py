@@ -256,7 +256,7 @@ def import_data():
                 department=row.get('Отдел', ''),
                 full_name=row.get('ФИО', ''),
                 position=row.get('Должность', ''),
-                internal_phone=clean_phone_number(row.get('№ вн.', row.get('внутр. №', ''))),
+                internal_phone=clean_phone_number(row.get('№ вн.', row.get('№ вн', row.get('внутр. №', '')))),
                 common_phone=clean_phone_number(row.get('общ. №', '')),
                 city_phone=clean_phone_number(row.get('городской №', '')),
                 email=row.get('email', '')
@@ -278,9 +278,10 @@ def export_pdf():
         
         # Проверяем доступность reportlab
         try:
-            from reportlab.lib.pagesizes import A4, landscape
-            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+            from reportlab.lib.pagesizes import A4
+            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
             from reportlab.lib import colors
+            from reportlab.lib.styles import getSampleStyleSheet
             print("ReportLab импортирован успешно")
         except ImportError as e:
             print(f"Ошибка импорта ReportLab: {e}")
@@ -292,9 +293,15 @@ def export_pdf():
         print(f"Найдено сотрудников для экспорта: {len(employees)}")
         
         buffer = io.BytesIO()
-        # Используем альбомную ориентацию для лучшего отображения таблицы
-        doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), topMargin=30, bottomMargin=30)
+        # Используем книжную ориентацию
+        doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=30, bottomMargin=30)
         elements = []
+        
+        # Добавляем заголовок
+        styles = getSampleStyleSheet()
+        title = Paragraph("Телефонный справочник", styles['Title'])
+        elements.append(title)
+        elements.append(Paragraph("<br/><br/>", styles['Normal']))
         
         # Подготовка данных таблицы
         data = [['Отдел', 'ФИО', 'Должность', 'Внутр. №', 'Общ. №', 'Городской №', 'Email']]
@@ -331,9 +338,9 @@ def export_pdf():
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2E86AB')),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 9),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
-            ('TOPPADDING', (0, 0), (-1, 0), 8),
+            ('FONTSIZE', (0, 0), (-1, 0), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+            ('TOPPADDING', (0, 0), (-1, 0), 6),
             
             # Чередование цветов строк для лучшей читаемости
             ('BACKGROUND', (0, 1), (-1, -1), colors.white),
@@ -341,7 +348,7 @@ def export_pdf():
             
             # Стиль данных
             ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-            ('FONTSIZE', (0, 1), (-1, -1), 8),
+            ('FONTSIZE', (0, 1), (-1, -1), 7),
             ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
@@ -351,14 +358,14 @@ def export_pdf():
             ('LINEBELOW', (0, 0), (-1, 0), 1, colors.white),
             
             # Отступы
-            ('LEFTPADDING', (0, 0), (-1, -1), 4),
-            ('RIGHTPADDING', (0, 0), (-1, -1), 4),
-            ('TOPPADDING', (0, 0), (-1, -1), 3),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+            ('LEFTPADDING', (0, 0), (-1, -1), 3),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 3),
+            ('TOPPADDING', (0, 0), (-1, -1), 2),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
         ])
         
-        # Настраиваем ширину колонок для лучшего отображения
-        col_widths = [80, 120, 100, 50, 60, 60, 100]  # Ширина колонок в пунктах
+        # Настраиваем ширину колонок для книжной ориентации
+        col_widths = [70, 100, 80, 40, 50, 50, 80]  # Ширина колонок в пунктах
         
         table._argW = col_widths
         table.setStyle(table_style)
