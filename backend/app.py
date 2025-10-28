@@ -55,6 +55,7 @@ class Employee(db.Model):
     city_phone = db.Column(db.String(20))
     email = db.Column(db.String(100))
     photo = db.Column(db.String(255))
+    display_order = db.Column(db.Integer, default=0)  # Поле для порядка отображения
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -118,7 +119,8 @@ def get_employees():
     if department:
         query = query.filter(Employee.department == department)
     
-    employees = query.all()
+    # Сортируем по display_order, затем по id
+    employees = query.order_by(Employee.display_order, Employee.id).all()
     
     result = []
     for emp in employees:
@@ -132,6 +134,7 @@ def get_employees():
             'city_phone': emp.city_phone,
             'email': emp.email,
             'photo': emp.photo,
+            'display_order': emp.display_order,
             'created_at': emp.created_at.isoformat()
         })
     
@@ -184,6 +187,41 @@ def delete_employee(id):
     db.session.commit()
     
     return jsonify({'message': 'Сотрудник удален'})
+
+# Очистка всей базы данных сотрудников
+@app.route('/api/employees/clear', methods=['DELETE'])
+@login_required
+def clear_database():
+    try:
+        # Удаляем всех сотрудников
+        num_deleted = Employee.query.delete()
+        db.session.commit()
+        
+        return jsonify({'message': f'База данных очищена. Удалено {num_deleted} записей'})
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Ошибка очистки базы: {str(e)}'}), 500
+
+# Обновление порядка сотрудников
+@app.route('/api/employees/reorder', methods=['POST'])
+@login_required
+def reorder_employees():
+    try:
+        data = request.get_json()
+        order_data = data.get('order', [])
+        
+        for item in order_data:
+            employee = Employee.query.get(item['id'])
+            if employee:
+                employee.display_order = item['order']
+        
+        db.session.commit()
+        return jsonify({'message': 'Порядок сотрудников обновлен'})
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Ошибка обновления порядка: {str(e)}'}), 500
 
 # Загрузка фото
 @app.route('/api/upload_photo/<int:employee_id>', methods=['POST'])

@@ -17,20 +17,22 @@ import {
   CardContent,
   CardActions
 } from '@mui/material'
-import { Add, Edit, Delete, Upload, CloudUpload } from '@mui/icons-material'
+import { Add, Edit, Delete, Upload, CloudUpload, Clear } from '@mui/icons-material'
 import EmployeeTable from './EmployeeTable'
 import { 
   createEmployee, 
   updateEmployee, 
   deleteEmployee, 
   importData,
-  uploadPhoto 
+  uploadPhoto,
+  clearDatabase 
 } from '../services/api'
 
 const AdminPanel = () => {
   const [employees, setEmployees] = useState([])
   const [dialogOpen, setDialogOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
+  const [clearOpen, setClearOpen] = useState(false)
   const [currentEmployee, setCurrentEmployee] = useState(null)
   const [employeeData, setEmployeeData] = useState({
     department: '',
@@ -122,6 +124,17 @@ const AdminPanel = () => {
     }
   }
 
+  const handleClearDatabase = async () => {
+    try {
+      const response = await clearDatabase()
+      showSnackbar(response.data.message)
+      setClearOpen(false)
+      window.dispatchEvent(new Event('employeesUpdated'))
+    } catch (error) {
+      showSnackbar(error.response?.data?.error || 'Ошибка очистки базы', 'error')
+    }
+  }
+
   const handlePhotoUpload = async (employeeId, file) => {
     try {
       await uploadPhoto(employeeId, file)
@@ -160,6 +173,15 @@ const AdminPanel = () => {
                   onClick={() => setImportOpen(true)}
                 >
                   Импорт из файла
+                </Button>
+
+                <Button
+                  variant="outlined"
+                  color="error"
+                  startIcon={<Clear />}
+                  onClick={() => setClearOpen(true)}
+                >
+                  Очистить базу
                 </Button>
               </Box>
             </CardContent>
@@ -269,6 +291,25 @@ const AdminPanel = () => {
           <Button onClick={() => setImportOpen(false)}>Отмена</Button>
           <Button onClick={handleImport} variant="contained">
             Импортировать
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Диалог очистки базы данных */}
+      <Dialog open={clearOpen} onClose={() => setClearOpen(false)}>
+        <DialogTitle>Очистка базы данных</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            Вы уверены, что хотите удалить ВСЕ записи сотрудников из базы данных?
+          </Typography>
+          <Typography variant="body2" color="error">
+            Это действие нельзя отменить!
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setClearOpen(false)}>Отмена</Button>
+          <Button onClick={handleClearDatabase} variant="contained" color="error">
+            Очистить базу
           </Button>
         </DialogActions>
       </Dialog>

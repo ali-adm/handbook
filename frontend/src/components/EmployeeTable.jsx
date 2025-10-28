@@ -19,19 +19,22 @@ import {
   Chip,
   Avatar,
   IconButton,
-  Tooltip
+  Tooltip,
+  Switch,
+  FormControlLabel
 } from '@mui/material'
-import { Search, Download, Edit, Delete } from '@mui/icons-material'
-import { getEmployees, getDepartments, exportPDF } from '../services/api'
+import { Search, Download, Edit, Delete, ArrowUpward, ArrowDownward } from '@mui/icons-material'
+import { getEmployees, getDepartments, exportPDF, reorderEmployees } from '../services/api'
 
 const EmployeeTable = ({ onEdit, onDelete, onPhotoUpload }) => {
   const [employees, setEmployees] = useState([])
   const [departments, setDepartments] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedDepartment, setSelectedDepartment] = useState('')
-  const [orderBy, setOrderBy] = useState('full_name')
+  const [orderBy, setOrderBy] = useState('display_order')
   const [order, setOrder] = useState('asc')
   const [loading, setLoading] = useState(false)
+  const [reordering, setReordering] = useState(false)
 
   useEffect(() => {
     loadEmployees()
@@ -108,6 +111,52 @@ const EmployeeTable = ({ onEdit, onDelete, onPhotoUpload }) => {
     }
   }
 
+  const handleMoveUp = async (employee, index) => {
+    if (index === 0) return // Нельзя поднять первую запись
+    
+    const newEmployees = [...employees]
+    const temp = newEmployees[index]
+    newEmployees[index] = newEmployees[index - 1]
+    newEmployees[index - 1] = temp
+    
+    // Обновляем порядок в базе данных
+    const orderData = newEmployees.map((emp, idx) => ({
+      id: emp.id,
+      order: idx
+    }))
+    
+    try {
+      await reorderEmployees(orderData)
+      setEmployees(newEmployees)
+    } catch (error) {
+      console.error('Ошибка перемещения:', error)
+      alert('Ошибка при перемещении записи')
+    }
+  }
+
+  const handleMoveDown = async (employee, index) => {
+    if (index === employees.length - 1) return // Нельзя опустить последнюю запись
+    
+    const newEmployees = [...employees]
+    const temp = newEmployees[index]
+    newEmployees[index] = newEmployees[index + 1]
+    newEmployees[index + 1] = temp
+    
+    // Обновляем порядок в базе данных
+    const orderData = newEmployees.map((emp, idx) => ({
+      id: emp.id,
+      order: idx
+    }))
+    
+    try {
+      await reorderEmployees(orderData)
+      setEmployees(newEmployees)
+    } catch (error) {
+      console.error('Ошибка перемещения:', error)
+      alert('Ошибка при перемещении записи')
+    }
+  }
+
   const handleSort = (property) => {
     const isAsc = orderBy === property && order === 'asc'
     setOrder(isAsc ? 'desc' : 'asc')
@@ -115,6 +164,11 @@ const EmployeeTable = ({ onEdit, onDelete, onPhotoUpload }) => {
   }
 
   const sortedEmployees = [...employees].sort((a, b) => {
+    // Если включено перетаскивание, используем display_order
+    if (reordering) {
+      return (a.display_order || 0) - (b.display_order || 0)
+    }
+    
     if (order === 'asc') {
       return a[orderBy]?.localeCompare(b[orderBy]) || 0
     } else {
@@ -183,6 +237,20 @@ const EmployeeTable = ({ onEdit, onDelete, onPhotoUpload }) => {
           Экспорт PDF
         </Button>
 
+        {/* Переключатель режима перетаскивания */}
+        {onEdit && (
+          <FormControlLabel
+            control={
+              <Switch
+                checked={reordering}
+                onChange={(e) => setReordering(e.target.checked)}
+                color="primary"
+              />
+            }
+            label="Режим перетаскивания"
+          />
+        )}
+
         <Typography variant="body2" color="text.secondary">
           Найдено: {employees.length} сотрудников
         </Typography>
@@ -192,6 +260,10 @@ const EmployeeTable = ({ onEdit, onDelete, onPhotoUpload }) => {
         <Table sx={{ minWidth: 650 }} aria-label="таблица сотрудников">
           <TableHead>
             <TableRow>
+              {/* Колонка для кнопок перемещения */}
+              {reordering && onEdit && (
+                <TableCell width="80">Перемещение</TableCell>
+              )}
               {columns.map((column) => (
                 <TableCell key={column.id}>
                   <TableSortLabel
@@ -206,8 +278,39 @@ const EmployeeTable = ({ onEdit, onDelete, onPhotoUpload }) => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {sortedEmployees.map((employee) => (
+            {sortedEmployees.map((employee, index) => (
               <TableRow key={employee.id} hover>
+                {/* Кнопки перемещения */}
+                {reordering && onEdit && (
+                  <TableCell>
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                      <Tooltip title="Переместить вверх">
+                        <span>
+                          <IconButton 
+                            size="small" 
+                            color="primary"
+                            onClick={() => handleMoveUp(employee, index)}
+                            disabled={index === 0}
+                          >
+                            <ArrowUpward />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                      <Tooltip title="Переместить вниз">
+                        <span>
+                          <IconButton 
+                            size="small" 
+                            color="primary"
+                            onClick={() => handleMoveDown(employee, index)}
+                            disabled={index === employees.length - 1}
+                          >
+                            <ArrowDownward />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    </Box>
+                  </TableCell>
+                )}
                 <TableCell>
                   <Chip 
                     label={employee.department} 

@@ -46,4 +46,10 @@ export const importData = (file) => {
 // Экспорт
 export const exportPDF = () => api.get('/export/pdf', { responseType: 'blob' })
 
+// Очистка базы данных
+export const clearDatabase = () => api.delete('/employees/clear')
+
+// Перетаскивание сотрудников
+export const reorderEmployees = (orderData) => api.post('/employees/reorder', { order: orderData })
+
 export default api
