@@ -169,10 +169,19 @@ const EmployeeTable = ({ onEdit, onDelete, onPhotoUpload }) => {
       return (a.display_order || 0) - (b.display_order || 0)
     }
     
+    const aValue = a[orderBy] || ''
+    const bValue = b[orderBy] || ''
+    
+    // Для числовых полей используем числовое сравнение
+    if (orderBy === 'display_order' || orderBy === 'id') {
+      return order === 'asc' ? (aValue - bValue) : (bValue - aValue)
+    }
+    
+    // Для строковых полей используем localeCompare
     if (order === 'asc') {
-      return a[orderBy]?.localeCompare(b[orderBy]) || 0
+      return String(aValue).localeCompare(String(bValue))
     } else {
-      return b[orderBy]?.localeCompare(a[orderBy]) || 0
+      return String(bValue).localeCompare(String(aValue))
     }
   })
 
