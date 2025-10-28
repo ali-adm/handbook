@@ -278,6 +278,9 @@ def import_data():
         else:
             return jsonify({'error': 'Неподдерживаемый формат файла'}), 400
         
+        # Получаем текущее максимальное значение display_order
+        max_order = db.session.query(db.func.max(Employee.display_order)).scalar() or 0
+        
         imported_count = 0
         for _, row in df.iterrows():
             # Обрабатываем номера телефонов - убираем .0 и преобразуем в строки
@@ -297,7 +300,8 @@ def import_data():
                 internal_phone=clean_phone_number(row.get('№ вн.', row.get('№ вн', row.get('внутр. №', '')))),
                 common_phone=clean_phone_number(row.get('общ. №', '')),
                 city_phone=clean_phone_number(row.get('городской №', '')),
-                email=row.get('email', '')
+                email=row.get('email', ''),
+                display_order=max_order + imported_count + 1  # Автоматически устанавливаем порядок
             )
             db.session.add(employee)
             imported_count += 1
