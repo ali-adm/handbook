@@ -50,6 +50,6 @@ export const exportPDF = () => api.get('/export/pdf', { responseType: 'blob' })
 export const clearDatabase = () => api.delete('/employees/clear')
 
 // Перетаскивание сотрудников
-export const reorderEmployees = (orderData) => api.post('/employees/reorder', { order: orderData })
+export const reorderEmployees = (orderData) => api.post('/employees/reorder', orderData)
 
 export default api

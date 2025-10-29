@@ -209,18 +209,28 @@ def clear_database():
 def reorder_employees():
     try:
         data = request.get_json()
-        order_data = data.get('order', [])
+        print(f"Received reorder data: {data}")
+        
+        # Обрабатываем как массив напрямую (без ключа 'order')
+        order_data = data if isinstance(data, list) else data.get('order', [])
+        
+        print(f"Processing {len(order_data)} employees")
         
         for item in order_data:
             employee = Employee.query.get(item['id'])
             if employee:
+                print(f"Updating employee {employee.id} ({employee.full_name}) to order {item['order']}")
                 employee.display_order = item['order']
+            else:
+                print(f"Employee with id {item['id']} not found")
         
         db.session.commit()
+        print("Order updated successfully")
         return jsonify({'message': 'Порядок сотрудников обновлен'})
     
     except Exception as e:
         db.session.rollback()
+        print(f"Error updating order: {str(e)}")
         return jsonify({'error': f'Ошибка обновления порядка: {str(e)}'}), 500
 
 # Загрузка фото
