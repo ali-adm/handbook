@@ -335,7 +335,12 @@ const EmployeeTable = ({ onEdit, onDelete, onPhotoUpload }) => {
           console.log('Sending reorder request to server...')
           const response = await reorderEmployees(orderData)
           console.log('Server response:', response.data)
+          // Обновляем состояние и принудительно перезагружаем данные
           setEmployees(newEmployees)
+          // Принудительно перезагружаем данные с сервера для синхронизации
+          setTimeout(() => {
+            loadEmployees()
+          }, 100)
           setSnackbar({
             open: true,
             message: 'Порядок сотрудников успешно обновлен',
