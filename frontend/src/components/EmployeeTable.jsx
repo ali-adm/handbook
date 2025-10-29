@@ -311,10 +311,12 @@ const EmployeeTable = ({ onEdit, onDelete, onPhotoUpload }) => {
     const { active, over } = event
 
     if (active.id !== over?.id) {
+      // Находим индексы в полном отсортированном списке
       const oldIndex = sortedEmployees.findIndex((emp) => emp.id === active.id)
       const newIndex = sortedEmployees.findIndex((emp) => emp.id === over.id)
 
       if (oldIndex !== -1 && newIndex !== -1) {
+        // Создаем новый массив с измененным порядком
         const newEmployees = arrayMove(sortedEmployees, oldIndex, newIndex)
         
         // Обновляем порядок в базе данных
@@ -357,6 +359,10 @@ const EmployeeTable = ({ onEdit, onDelete, onPhotoUpload }) => {
     setPage(1)
   }
 
+  // Вычисление данных для текущей страницы
+  const startIndex = (page - 1) * rowsPerPage
+  const endIndex = startIndex + rowsPerPage
+
   const sortedEmployees = [...employees].sort((a, b) => {
     // Если включено перетаскивание, используем display_order
     if (reordering) {
@@ -378,6 +384,9 @@ const EmployeeTable = ({ onEdit, onDelete, onPhotoUpload }) => {
       return String(bValue).localeCompare(String(aValue))
     }
   })
+
+  // Пагинированные данные для отображения
+  const paginatedEmployees = sortedEmployees.slice(startIndex, endIndex)
 
   const columns = [
     { id: 'department', label: 'Отдел' },
@@ -486,8 +495,8 @@ const EmployeeTable = ({ onEdit, onDelete, onPhotoUpload }) => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                <SortableContext items={sortedEmployees.map(emp => emp.id)} strategy={verticalListSortingStrategy}>
-                  {sortedEmployees.map((employee) => (
+                <SortableContext items={paginatedEmployees.map(emp => emp.id)} strategy={verticalListSortingStrategy}>
+                  {paginatedEmployees.map((employee) => (
                     <SortableTableRow
                       key={employee.id}
                       employee={employee}
@@ -525,7 +534,7 @@ const EmployeeTable = ({ onEdit, onDelete, onPhotoUpload }) => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {sortedEmployees.map((employee, index) => (
+              {paginatedEmployees.map((employee, index) => (
                 <TableRow key={employee.id} hover>
                   {/* Кнопки перемещения */}
                   {reordering && onEdit && (
@@ -536,8 +545,8 @@ const EmployeeTable = ({ onEdit, onDelete, onPhotoUpload }) => {
                             <IconButton 
                               size="small" 
                               color="primary"
-                              onClick={() => handleMoveUp(employee, index)}
-                              disabled={index === 0}
+                              onClick={() => handleMoveUp(employee, startIndex + index)}
+                              disabled={startIndex + index === 0}
                             >
                               <ArrowUpward />
                             </IconButton>
@@ -548,8 +557,8 @@ const EmployeeTable = ({ onEdit, onDelete, onPhotoUpload }) => {
                             <IconButton 
                               size="small" 
                               color="primary"
-                              onClick={() => handleMoveDown(employee, index)}
-                              disabled={index === employees.length - 1}
+                              onClick={() => handleMoveDown(employee, startIndex + index)}
+                              disabled={startIndex + index === employees.length - 1}
                             >
                               <ArrowDownward />
                             </IconButton>
