@@ -310,10 +310,14 @@ const EmployeeTable = ({ onEdit, onDelete, onPhotoUpload }) => {
   const handleDragEnd = async (event) => {
     const { active, over } = event
 
-    if (active.id !== over?.id) {
+    console.log('Drag event:', { active: active.id, over: over?.id })
+
+    if (active.id !== over?.id && over) {
       // Находим индексы в полном отсортированном списке
       const oldIndex = sortedEmployees.findIndex((emp) => emp.id === active.id)
       const newIndex = sortedEmployees.findIndex((emp) => emp.id === over.id)
+
+      console.log('Indices:', { oldIndex, newIndex, total: sortedEmployees.length })
 
       if (oldIndex !== -1 && newIndex !== -1) {
         // Создаем новый массив с измененным порядком
@@ -324,6 +328,8 @@ const EmployeeTable = ({ onEdit, onDelete, onPhotoUpload }) => {
           id: emp.id,
           order: idx
         }))
+        
+        console.log('New order data:', orderData)
         
         try {
           await reorderEmployees(orderData)
@@ -341,7 +347,11 @@ const EmployeeTable = ({ onEdit, onDelete, onPhotoUpload }) => {
             severity: 'error'
           })
         }
+      } else {
+        console.log('Invalid indices - cannot move')
       }
+    } else {
+      console.log('No valid drop target or same element')
     }
   }
 
@@ -495,7 +505,7 @@ const EmployeeTable = ({ onEdit, onDelete, onPhotoUpload }) => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                <SortableContext items={paginatedEmployees.map(emp => emp.id)} strategy={verticalListSortingStrategy}>
+                <SortableContext items={sortedEmployees.map(emp => emp.id)} strategy={verticalListSortingStrategy}>
                   {paginatedEmployees.map((employee) => (
                     <SortableTableRow
                       key={employee.id}
