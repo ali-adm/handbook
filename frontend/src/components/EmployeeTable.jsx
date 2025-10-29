@@ -332,7 +332,9 @@ const EmployeeTable = ({ onEdit, onDelete, onPhotoUpload }) => {
         console.log('New order data:', orderData)
         
         try {
-          await reorderEmployees(orderData)
+          console.log('Sending reorder request to server...')
+          const response = await reorderEmployees(orderData)
+          console.log('Server response:', response.data)
           setEmployees(newEmployees)
           setSnackbar({
             open: true,
@@ -341,9 +343,10 @@ const EmployeeTable = ({ onEdit, onDelete, onPhotoUpload }) => {
           })
         } catch (error) {
           console.error('Ошибка перемещения:', error)
+          console.error('Error details:', error.response?.data || error.message)
           setSnackbar({
             open: true,
-            message: 'Ошибка при перемещении записи',
+            message: `Ошибка при перемещении записи: ${error.response?.data?.error || error.message}`,
             severity: 'error'
           })
         }
