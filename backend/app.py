@@ -267,6 +267,30 @@ def get_departments():
     departments = db.session.query(Employee.department).distinct().all()
     return jsonify([dept[0] for dept in departments if dept[0]])
 
+# Получение статистики сотрудников
+@app.route('/api/statistics', methods=['GET'])
+def get_statistics():
+    try:
+        # Общее количество сотрудников
+        total_employees = Employee.query.count()
+        
+        # Количество сотрудников по отделам
+        department_stats = db.session.query(
+            Employee.department,
+            db.func.count(Employee.id)
+        ).group_by(Employee.department).all()
+        
+        # Преобразуем в словарь
+        department_counts = {dept: count for dept, count in department_stats if dept}
+        
+        return jsonify({
+            'total_employees': total_employees,
+            'department_counts': department_counts
+        })
+    
+    except Exception as e:
+        return jsonify({'error': f'Ошибка получения статистики: {str(e)}'}), 500
+
 # Импорт из Excel/CSV
 @app.route('/api/import', methods=['POST'])
 @login_required
@@ -321,6 +345,57 @@ def import_data():
     
     except Exception as e:
         return jsonify({'error': f'Ошибка импорта: {str(e)}'}), 500
+
+# Экспорт в Excel
+@app.route('/api/export/excel', methods=['GET'])
+def export_excel():
+    try:
+        import pandas as pd
+        import io
+        
+        employees = Employee.query.all()
+        
+        # Создаем DataFrame
+        data = []
+        for emp in employees:
+            data.append({
+                'Отдел': emp.department or '',
+                'ФИО': emp.full_name or '',
+                'Должность': emp.position or '',
+                'Внутренний номер': str(emp.internal_phone).replace('.0', '') if emp.internal_phone else '',
+                'Общий номер': str(emp.common_phone).replace('.0', '') if emp.common_phone else '',
+                'Городской номер': str(emp.city_phone).replace('.0', '') if emp.city_phone else '',
+                'Email': emp.email or ''
+            })
+        
+        df = pd.DataFrame(data)
+        
+        # Создаем Excel файл в памяти
+        buffer = io.BytesIO()
+        with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+            df.to_excel(writer, sheet_name='Сотрудники', index=False)
+            
+            # Настраиваем ширину колонок
+            worksheet = writer.sheets['Сотрудники']
+            worksheet.column_dimensions['A'].width = 20  # Отдел
+            worksheet.column_dimensions['B'].width = 30  # ФИО
+            worksheet.column_dimensions['C'].width = 25  # Должность
+            worksheet.column_dimensions['D'].width = 15  # Внутренний номер
+            worksheet.column_dimensions['E'].width = 15  # Общий номер
+            worksheet.column_dimensions['F'].width = 15  # Городской номер
+            worksheet.column_dimensions['G'].width = 25  # Email
+        
+        buffer.seek(0)
+        
+        return send_file(
+            buffer,
+            as_attachment=True,
+            download_name='phone_directory.xlsx',
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+    
+    except Exception as e:
+        return jsonify({'error': f'Ошибка экспорта в Excel: {str(e)}'}), 500
 
 # Экспорт в PDF
 @app.route('/api/export/pdf', methods=['GET'])

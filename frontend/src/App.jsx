@@ -90,9 +90,21 @@ function App() {
       <Box sx={{ flexGrow: 1 }}>
         <AppBar position="static">
           <Toolbar>
-            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-              📞 Телефонный справочник
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
+              <img 
+                src="/logo.png" 
+                alt="Логотип АКБ Толубай" 
+                style={{ 
+                  width: 60, 
+                  height: 60, 
+                  marginRight: 16,
+                  borderRadius: 4
+                }}
+              />
+              <Typography variant="h6" component="div">
+                Телефонный справочник АКБ "Толубай"
+              </Typography>
+            </Box>
             
             {/* Кнопка переключения темы */}
             <IconButton color="inherit" onClick={toggleDarkMode} sx={{ mr: 2 }}>

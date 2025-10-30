@@ -45,6 +45,10 @@ export const importData = (file) => {
 
 // Экспорт
 export const exportPDF = () => api.get('/export/pdf', { responseType: 'blob' })
+export const exportExcel = () => api.get('/export/excel', { responseType: 'blob' })
+
+// Статистика
+export const getStatistics = () => api.get('/statistics')
 
 // Очистка базы данных
 export const clearDatabase = () => api.delete('/employees/clear')

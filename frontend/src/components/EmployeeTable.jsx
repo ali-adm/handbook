@@ -28,7 +28,8 @@ import {
   FormGroup
 } from '@mui/material'
 import { Search, Download, Edit, Delete, ArrowUpward, ArrowDownward, DragIndicator } from '@mui/icons-material'
-import { getEmployees, getDepartments, exportPDF, reorderEmployees } from '../services/api'
+import { getEmployees, getDepartments, exportPDF, exportExcel, reorderEmployees, getStatistics } from '../services/api'
+import StatisticsPanel from './StatisticsPanel'
 import {
   DndContext,
   closestCenter,
@@ -170,6 +171,7 @@ const EmployeeTable = ({ onEdit, onDelete, onPhotoUpload }) => {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
   const [page, setPage] = useState(1)
   const [rowsPerPage, setRowsPerPage] = useState(10)
+  const [statistics, setStatistics] = useState(null)
 
   // Настройка сенсоров для drag & drop
   const sensors = useSensors(
@@ -182,11 +184,13 @@ const EmployeeTable = ({ onEdit, onDelete, onPhotoUpload }) => {
   useEffect(() => {
     loadEmployees()
     loadDepartments()
+    loadStatistics()
     
     // Слушаем события обновления
     const handleEmployeesUpdated = () => {
       loadEmployees()
       loadDepartments()
+      loadStatistics()
     }
     
     window.addEventListener('employeesUpdated', handleEmployeesUpdated)
@@ -194,6 +198,11 @@ const EmployeeTable = ({ onEdit, onDelete, onPhotoUpload }) => {
       window.removeEventListener('employeesUpdated', handleEmployeesUpdated)
     }
   }, [])
+
+  // Перезагружаем сотрудников при изменении фильтров
+  useEffect(() => {
+    loadEmployees()
+  }, [selectedDepartment])
 
   const loadEmployees = async () => {
     setLoading(true)
@@ -218,6 +227,20 @@ const EmployeeTable = ({ onEdit, onDelete, onPhotoUpload }) => {
     } catch (error) {
       console.error('Ошибка загрузки отделов:', error)
     }
+  }
+
+  const loadStatistics = async () => {
+    try {
+      const response = await getStatistics()
+      setStatistics(response.data)
+    } catch (error) {
+      console.error('Ошибка загрузки статистики:', error)
+    }
+  }
+
+  const handleDepartmentClick = (department) => {
+    setSelectedDepartment(department)
+    setPage(1) // Сбрасываем на первую страницу при смене фильтра
   }
 
   const handleSearch = () => {
@@ -251,6 +274,36 @@ const EmployeeTable = ({ onEdit, onDelete, onPhotoUpload }) => {
     } catch (error) {
       console.error('Ошибка экспорта:', error)
       alert('Ошибка при экспорте PDF. Проверьте консоль для подробностей.')
+    }
+  }
+
+  const handleExportExcel = async () => {
+    try {
+      console.log('Начало экспорта Excel...')
+      const response = await exportExcel()
+      console.log('Excel получен, размер:', response.data.size)
+      
+      // Создаем blob из данных
+      const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+      const url = window.URL.createObjectURL(blob)
+      
+      // Создаем ссылку для скачивания
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', 'phone_directory.xlsx')
+      document.body.appendChild(link)
+      
+      // Имитируем клик для скачивания
+      link.click()
+      
+      // Очищаем
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(link)
+      
+      console.log('Excel успешно скачан')
+    } catch (error) {
+      console.error('Ошибка экспорта Excel:', error)
+      alert('Ошибка при экспорте Excel. Проверьте консоль для подробностей.')
     }
   }
 
@@ -423,6 +476,13 @@ const EmployeeTable = ({ onEdit, onDelete, onPhotoUpload }) => {
 
   return (
     <Box>
+      {/* Панель статистики */}
+      <StatisticsPanel 
+        statistics={statistics}
+        onDepartmentClick={handleDepartmentClick}
+        selectedDepartment={selectedDepartment}
+      />
+      
       <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
         <TextField
           label="Поиск..."
@@ -465,6 +525,15 @@ const EmployeeTable = ({ onEdit, onDelete, onPhotoUpload }) => {
           onClick={handleExportPDF}
         >
           Экспорт PDF
+        </Button>
+
+        <Button
+          variant="outlined"
+          startIcon={<Download />}
+          onClick={handleExportExcel}
+          color="success"
+        >
+          Экспорт Excel
         </Button>
 
         {/* Переключатель режима перетаскивания */}
