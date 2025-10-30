@@ -63,7 +63,7 @@ class Employee(db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# Создание таблиц и администратора по умолчанию - ПЕРЕД запуском приложения
+# Создание таблиц и администраторов по умолчанию - ПЕРЕД запуском приложения
 with app.app_context():
     db.create_all()
     # Создание администратора по умолчанию
@@ -71,7 +71,15 @@ with app.app_context():
         admin = User(username='admin')
         admin.set_password('admin123')
         db.session.add(admin)
-        db.session.commit()
+    
+    # Создание суперадмина с паролем из переменной окружения
+    superadmin_password = os.getenv('SUPERADMIN_PASSWORD', 'superadmin123')
+    if not User.query.filter_by(username='sadmin').first():
+        sadmin = User(username='sadmin')
+        sadmin.set_password(superadmin_password)
+        db.session.add(sadmin)
+    
+    db.session.commit()
 
 # API endpoints
 

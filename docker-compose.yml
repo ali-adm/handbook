@@ -12,6 +12,7 @@ services:
       - SECRET_KEY=your-production-secret-key-change-this
       - DATABASE_URL=sqlite:///handbook.db
       - DEBUG=False
+      - SUPERADMIN_PASSWORD=superadmin123
     restart: unless-stopped
 
   frontend:
