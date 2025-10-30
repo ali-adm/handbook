@@ -93,6 +93,32 @@ def logout():
     logout_user()
     return jsonify({'message': 'Успешный выход'})
 
+# Смена пароля администратора
+@app.route('/api/change_password', methods=['POST'])
+@login_required
+def change_password():
+    try:
+        data = request.get_json()
+        current_password = data.get('current_password')
+        new_password = data.get('new_password')
+        
+        if not current_password or not new_password:
+            return jsonify({'error': 'Текущий и новый пароль обязательны'}), 400
+        
+        # Проверяем текущий пароль
+        if not current_user.check_password(current_password):
+            return jsonify({'error': 'Неверный текущий пароль'}), 400
+        
+        # Устанавливаем новый пароль
+        current_user.set_password(new_password)
+        db.session.commit()
+        
+        return jsonify({'message': 'Пароль успешно изменен'})
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Ошибка смены пароля: {str(e)}'}), 500
+
 @app.route('/api/check_auth', methods=['GET'])
 def check_auth():
     return jsonify({'authenticated': current_user.is_authenticated})
@@ -327,13 +353,31 @@ def import_data():
                     phone_str = phone_str[:-2]
                 return phone_str.strip()
             
+            # Поддержка разных названий колонок для совместимости с экспортированными файлами
+            internal_phone = clean_phone_number(
+                row.get('№ вн.', 
+                row.get('№ вн', 
+                row.get('внутр. №', 
+                row.get('Внутренний номер', ''))))
+            )
+            
+            common_phone = clean_phone_number(
+                row.get('общ. №', 
+                row.get('Общий номер', ''))
+            )
+            
+            city_phone = clean_phone_number(
+                row.get('городской №', 
+                row.get('Городской номер', ''))
+            )
+            
             employee = Employee(
                 department=row.get('Отдел', ''),
                 full_name=row.get('ФИО', ''),
                 position=row.get('Должность', ''),
-                internal_phone=clean_phone_number(row.get('№ вн.', row.get('№ вн', row.get('внутр. №', '')))),
-                common_phone=clean_phone_number(row.get('общ. №', '')),
-                city_phone=clean_phone_number(row.get('городской №', '')),
+                internal_phone=internal_phone,
+                common_phone=common_phone,
+                city_phone=city_phone,
                 email=row.get('email', ''),
                 display_order=max_order + imported_count + 1  # Автоматически устанавливаем порядок
             )

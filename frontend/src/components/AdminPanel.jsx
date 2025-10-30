@@ -17,7 +17,7 @@ import {
   CardContent,
   CardActions
 } from '@mui/material'
-import { Add, Edit, Delete, Upload, CloudUpload, Clear } from '@mui/icons-material'
+import { Add, Edit, Delete, Upload, CloudUpload, Clear, VpnKey } from '@mui/icons-material'
 import EmployeeTable from './EmployeeTable'
 import { 
   createEmployee, 
@@ -25,7 +25,8 @@ import {
   deleteEmployee, 
   importData,
   uploadPhoto,
-  clearDatabase 
+  clearDatabase,
+  changePassword 
 } from '../services/api'
 
 const AdminPanel = () => {
@@ -44,6 +45,12 @@ const AdminPanel = () => {
     email: ''
   })
   const [importFile, setImportFile] = useState(null)
+  const [passwordOpen, setPasswordOpen] = useState(false)
+  const [passwordData, setPasswordData] = useState({
+    current_password: '',
+    new_password: '',
+    confirm_password: ''
+  })
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
 
   const showSnackbar = (message, severity = 'success') => {
@@ -145,6 +152,36 @@ const AdminPanel = () => {
     }
   }
 
+  const handleChangePassword = async () => {
+    // Проверка совпадения паролей
+    if (passwordData.new_password !== passwordData.confirm_password) {
+      showSnackbar('Новые пароли не совпадают', 'error')
+      return
+    }
+
+    // Проверка минимальной длины пароля
+    if (passwordData.new_password.length < 6) {
+      showSnackbar('Новый пароль должен быть не менее 6 символов', 'error')
+      return
+    }
+
+    try {
+      await changePassword({
+        current_password: passwordData.current_password,
+        new_password: passwordData.new_password
+      })
+      showSnackbar('Пароль успешно изменен')
+      setPasswordOpen(false)
+      setPasswordData({
+        current_password: '',
+        new_password: '',
+        confirm_password: ''
+      })
+    } catch (error) {
+      showSnackbar(error.response?.data?.error || 'Ошибка смены пароля', 'error')
+    }
+  }
+
   return (
     <Box>
       <Grid container spacing={3}>
@@ -182,6 +219,15 @@ const AdminPanel = () => {
                   onClick={() => setClearOpen(true)}
                 >
                   Очистить базу
+                </Button>
+
+                <Button
+                  variant="outlined"
+                  color="secondary"
+                  startIcon={<VpnKey />}
+                  onClick={() => setPasswordOpen(true)}
+                >
+                  Сменить пароль
                 </Button>
               </Box>
             </CardContent>
@@ -310,6 +356,52 @@ const AdminPanel = () => {
           <Button onClick={() => setClearOpen(false)}>Отмена</Button>
           <Button onClick={handleClearDatabase} variant="contained" color="error">
             Очистить базу
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Диалог смены пароля */}
+      <Dialog open={passwordOpen} onClose={() => setPasswordOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Смена пароля администратора</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Текущий пароль"
+                type="password"
+                value={passwordData.current_password}
+                onChange={(e) => setPasswordData({ ...passwordData, current_password: e.target.value })}
+                required
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Новый пароль"
+                type="password"
+                value={passwordData.new_password}
+                onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })}
+                required
+                helperText="Минимум 6 символов"
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Подтверждение нового пароля"
+                type="password"
+                value={passwordData.confirm_password}
+                onChange={(e) => setPasswordData({ ...passwordData, confirm_password: e.target.value })}
+                required
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPasswordOpen(false)}>Отмена</Button>
+          <Button onClick={handleChangePassword} variant="contained" color="primary">
+            Сменить пароль
           </Button>
         </DialogActions>
       </Dialog>

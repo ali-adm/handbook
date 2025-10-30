@@ -53,6 +53,9 @@ export const getStatistics = () => api.get('/statistics')
 // Очистка базы данных
 export const clearDatabase = () => api.delete('/employees/clear')
 
+// Смена пароля администратора
+export const changePassword = (passwordData) => api.post('/change_password', passwordData)
+
 // Перетаскивание сотрудников
 export const reorderEmployees = (orderData) => api.post('/employees/reorder', orderData)
 
