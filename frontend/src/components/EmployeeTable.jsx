@@ -527,14 +527,17 @@ const EmployeeTable = ({ onEdit, onDelete, onPhotoUpload }) => {
           Экспорт PDF
         </Button>
 
-        <Button
-          variant="outlined"
-          startIcon={<Download />}
-          onClick={handleExportExcel}
-          color="success"
-        >
-          Экспорт Excel
-        </Button>
+        {/* Экспорт Excel только для админа */}
+        {onEdit && (
+          <Button
+            variant="outlined"
+            startIcon={<Download />}
+            onClick={handleExportExcel}
+            color="success"
+          >
+            Экспорт Excel
+          </Button>
+        )}
 
         {/* Переключатель режима перетаскивания */}
         {onEdit && (

@@ -17,53 +17,76 @@ const StatisticsPanel = ({ statistics, onDepartmentClick, selectedDepartment }) 
   const { total_employees, department_counts } = statistics
 
   return (
-    <Paper sx={{ p: 3, mb: 3, backgroundColor: 'background.paper' }}>
-      <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <People color="primary" />
-        Статистика сотрудников
-      </Typography>
+    <Paper 
+      sx={{ 
+        p: 2, 
+        mb: 3, 
+        backgroundColor: 'background.paper',
+        position: 'relative',
+        overflow: 'hidden',
+        minHeight: 120
+      }}
+    >
+      {/* Логотип на фоне */}
+      <Box
+        sx={{
+          position: 'absolute',
+          top: 0,
+          right: 0,
+          bottom: 0,
+          left: 0,
+          opacity: 0.03,
+          backgroundImage: 'url(/logo.png)',
+          backgroundSize: 'contain',
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'center',
+          pointerEvents: 'none'
+        }}
+      />
       
-      <Grid container spacing={3}>
-        {/* Общая статистика */}
-        <Grid item xs={12} md={4}>
+      <Grid container spacing={2} alignItems="center">
+        {/* Общая статистика - компактная версия */}
+        <Grid item xs={12} sm={3}>
           <Card 
             variant="outlined" 
             sx={{ 
-              height: '100%',
               borderColor: 'primary.main',
-              backgroundColor: 'background.default'
+              backgroundColor: 'background.default',
+              textAlign: 'center',
+              py: 1
             }}
           >
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="primary" gutterBottom>
+            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+              <Typography variant="h5" color="primary" gutterBottom>
                 {total_employees}
               </Typography>
-              <Typography variant="body1" color="text.secondary">
+              <Typography variant="body2" color="text.secondary">
                 Всего сотрудников
               </Typography>
             </CardContent>
           </Card>
         </Grid>
 
-        {/* Статистика по отделам */}
-        <Grid item xs={12} md={8}>
+        {/* Статистика по отделам - компактная версия */}
+        <Grid item xs={12} sm={9}>
           <Box>
-            <Typography variant="subtitle1" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Groups color="secondary" />
-              Сотрудники по отделам
+            <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <Groups color="secondary" fontSize="small" />
+              Сотрудники по отделам:
             </Typography>
             
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
               {Object.entries(department_counts).map(([department, count]) => (
                 <Chip
                   key={department}
                   label={`${department}: ${count}`}
+                  size="small"
                   variant={selectedDepartment === department ? "filled" : "outlined"}
                   color={selectedDepartment === department ? "primary" : "default"}
                   onClick={() => onDepartmentClick(department)}
                   clickable
                   sx={{
-                    fontSize: '0.9rem',
+                    fontSize: '0.75rem',
                     fontWeight: selectedDepartment === department ? 'bold' : 'normal',
                     '&:hover': {
                       backgroundColor: selectedDepartment === department ? 'primary.main' : 'action.hover',
@@ -74,9 +97,9 @@ const StatisticsPanel = ({ statistics, onDepartmentClick, selectedDepartment }) 
             </Box>
 
             {selectedDepartment && (
-              <Box sx={{ mt: 2 }}>
-                <Divider sx={{ mb: 2 }} />
-                <Typography variant="body2" color="text.secondary">
+              <Box sx={{ mt: 1 }}>
+                <Divider sx={{ mb: 1 }} />
+                <Typography variant="caption" color="text.secondary">
                   Активный фильтр: <strong>{selectedDepartment}</strong>
                   {' '}
                   <Chip 
