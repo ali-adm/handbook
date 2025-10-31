@@ -386,7 +386,7 @@ def import_data():
                 internal_phone=internal_phone,
                 common_phone=common_phone,
                 city_phone=city_phone,
-                email=row.get('email', ''),
+                email=row.get('email', row.get('Email', '')),  # Поддержка обоих вариантов
                 display_order=max_order + imported_count + 1  # Автоматически устанавливаем порядок
             )
             db.session.add(employee)
